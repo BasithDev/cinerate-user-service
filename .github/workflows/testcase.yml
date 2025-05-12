@@ -1,0 +1,39 @@
+name: User Service CI
+
+on:
+  push:
+    branches:
+      - main
+      - dev
+  pull_request:
+    branches:
+      - main
+      - dev
+
+jobs:
+  lint-and-test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up latest LTS Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 'lts/*'
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Run ESLint
+        run: npm run lint
+
+      - name: Run tests
+        run: npm test
+
+      - name: Handle Rollback on Failure
+        if: failure()
+        run: |
+          echo "❌ Lint or tests failed. Performing rollback..."
+          # Add real rollback logic here (e.g., git revert, undeploy script, notify team)
