@@ -3,7 +3,13 @@ const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const dotenv = require('dotenv').config();
-const JWT_SECRET = process.env.JWT_SECRET;
+// Ensure JWT_SECRET is always available
+const JWT_SECRET = process.env.JWT_SECRET || 'default-jwt-secret-for-development';
+
+// Log warning if using default secret in production
+if (!process.env.JWT_SECRET && process.env.NODE_ENV === 'production') {
+  console.warn('WARNING: Using default JWT_SECRET in production environment!');
+}
 
 const app = express();
 app.use(express.json());

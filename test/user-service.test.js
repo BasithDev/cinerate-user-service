@@ -6,6 +6,9 @@ const { app, connectToDatabase } = require('../index');
 let mongoServer;
 
 beforeAll(async () => {
+  // Ensure JWT_SECRET is set for tests
+  process.env.JWT_SECRET = process.env.JWT_SECRET || 'test-jwt-secret';
+  
   mongoServer = await MongoMemoryServer.create();
   const uri = mongoServer.getUri();
   await connectToDatabase(uri);
