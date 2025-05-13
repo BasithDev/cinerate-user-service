@@ -429,9 +429,37 @@ async function connectToDatabase(uri) {
       }
     });
     
-    await sequelize.authenticate();
-    console.log(`Connected to database (${sequelize.getDialect()})`);
-
+    try {
+      await sequelize.authenticate();
+      console.log(`Connected to database (${sequelize.getDialect()})`);
+    } catch (error) {
+      // If the database doesn't exist, try to create it
+      if (error.original && error.original.code === '3D000') { // Database does not exist error code
+        console.log(`Database ${DB_NAME} does not exist. Attempting to create it...`);
+        
+        // Create a connection to the default 'postgres' database to create our database
+        const adminSequelize = new Sequelize(`postgres://${DB_USER}:${DB_PASSWORD}@${DB_HOST}:${DB_PORT}/postgres`, {
+          dialect: 'postgres',
+          logging: false
+        });
+        
+        try {
+          await adminSequelize.authenticate();
+          await adminSequelize.query(`CREATE DATABASE ${DB_NAME};`);
+          await adminSequelize.close();
+          console.log(`Database ${DB_NAME} created successfully.`);
+          
+          // Reconnect to the newly created database
+          await sequelize.authenticate();
+          console.log(`Connected to database (${sequelize.getDialect()})`);
+        } catch (createError) {
+          console.error('Failed to create database:', createError);
+          throw createError;
+        }
+      } else {
+        throw error;
+      }
+    }
     
     await initializeModels();
     console.log('Database models initialized');
@@ -470,7 +498,7 @@ process.on('SIGTERM', async () => {
 const PORT = process.env.PORT || 3001;
 
 // Connect to database, Redis and start server
-const dbUri = process.env.DB_URI || 'postgres://postgres:postgres@localhost:5432/userdb';
+const dbUri = process.env.DB_URI || `postgres://postgres:postgres@localhost:5432/${process.env.DB_NAME || 'cinerate_user_db'}`;
 connectToDatabase(dbUri)
   .then(async () => {
     try {
