@@ -1,22 +1,25 @@
-const request = require('supertest');
-const mongoose = require('mongoose');
-const { MongoMemoryServer } = require('mongodb-memory-server');
-const { app, connectToDatabase } = require('../index');
+// Set NODE_ENV to 'test' before importing app
+process.env.NODE_ENV = 'test';
 
-let mongoServer;
+const request = require('supertest');
+const { app, connectToDatabase } = require('../index');
 
 beforeAll(async () => {
   // Ensure JWT_SECRET is set for tests
   process.env.JWT_SECRET = process.env.JWT_SECRET || 'test-jwt-secret';
   
-  mongoServer = await MongoMemoryServer.create();
-  const uri = mongoServer.getUri();
-  await connectToDatabase(uri);
+  // Connect to mock database for testing
+  await connectToDatabase();
 });
 
 afterAll(async () => {
-  await mongoose.disconnect();
-  await mongoServer.stop();
+  // No need to clean up mock database
+  // Close the server to prevent Jest hanging
+  if (app.server) {
+    await new Promise((resolve) => {
+      app.server.close(resolve);
+    });
+  }
 });
 
 describe('User API tests', () => {
