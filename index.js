@@ -317,9 +317,9 @@ app.use((err, req, res, next) => {
 
 async function connectToDatabase(uri) {
   try {
-    // Check if we're in test mode
-    if (process.env.NODE_ENV === 'test') {
-      console.log('Running in test mode - using mock database');
+    // Check if we're in test mode or if USE_MOCK_DB is set
+    if (process.env.NODE_ENV === 'test' || process.env.USE_MOCK_DB === 'true') {
+      console.log('Running with mock database');
       
       // Mock user data store for tests
       const mockUsers = [];
@@ -432,6 +432,7 @@ async function connectToDatabase(uri) {
     try {
       await sequelize.authenticate();
       console.log(`Connected to database (${sequelize.getDialect()})`);
+      console.log('Connection string: ', connectionString);
     } catch (error) {
       // If the database doesn't exist, try to create it
       if (error.original && error.original.code === '3D000') { // Database does not exist error code
@@ -465,6 +466,8 @@ async function connectToDatabase(uri) {
     console.log('Database models initialized');
     
   } catch (err) {
+    // Log error without trying to reconstruct the connection string
+    console.log('Database connection error');
     console.error('Failed to connect to PostgreSQL', err);
     const retryDelayMs = 5000;
     console.log(`Retrying connection in ${retryDelayMs / 1000} seconds...`);
@@ -498,8 +501,8 @@ process.on('SIGTERM', async () => {
 const PORT = process.env.PORT || 3001;
 
 // Connect to database, Redis and start server
-const dbUri = process.env.DB_URI || `postgres://postgres:postgres@localhost:5432/${process.env.DB_NAME || 'cinerate_user_db'}`;
-connectToDatabase(dbUri)
+// Use environment variables for connection parameters, with defaults as fallback
+connectToDatabase()
   .then(async () => {
     try {
       await redisCache.connect();
