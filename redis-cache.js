@@ -9,7 +9,11 @@ class RedisCache {
     this.client = null;
     this.connected = false;
     this.circuitBreaker = null;
-    this.redisUrl = process.env.REDIS_URL || 'redis://localhost:6379';
+    
+    // Get Redis connection details from environment variables
+    const redisHost = process.env.REDIS_HOST || 'localhost';
+    const redisPort = process.env.REDIS_PORT || '6379';
+    this.redisUrl = process.env.REDIS_URL || `redis://${redisHost}:${redisPort}`;
     this.testMode = process.env.NODE_ENV === 'test';
     
     // Initialize circuit breaker for Redis operations
