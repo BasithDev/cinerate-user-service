@@ -1,23 +1,32 @@
 // Set NODE_ENV to 'test' before importing app
 process.env.NODE_ENV = 'test';
+process.env.JWT_SECRET = 'test-jwt-secret';
+process.env.USE_MOCK_DB = 'true';
 
 const request = require('supertest');
-const { app, connectToDatabase } = require('../index');
+
+// Import database configuration to access connectToDatabase function
+const { connectToDatabase } = require('../src/config/database');
+
+// Import the app after setting environment variables
+const { app } = require('../src/app');
+
+// Create a server for testing
+let server;
 
 beforeAll(async () => {
-  // Ensure JWT_SECRET is set for tests
-  process.env.JWT_SECRET = process.env.JWT_SECRET || 'test-jwt-secret';
-  
   // Connect to mock database for testing
   await connectToDatabase();
+  
+  // Create test server
+  server = app.listen(0);
 });
 
 afterAll(async () => {
-  // No need to clean up mock database
   // Close the server to prevent Jest hanging
-  if (app.server) {
+  if (server) {
     await new Promise((resolve) => {
-      app.server.close(resolve);
+      server.close(resolve);
     });
   }
 });
@@ -26,7 +35,7 @@ describe('User API tests', () => {
   let userId;
 
   test('POST /signup - should register a user', async () => {
-    const res = await request(app).post('/signup').send({
+    const res = await request(server).post('/signup').send({
       name: 'Test User',
       email: 'test@example.com',
       password: 'password123',
@@ -37,7 +46,7 @@ describe('User API tests', () => {
   });
 
   test('POST /login - should login and return token', async () => {
-    const res = await request(app).post('/login').send({
+    const res = await request(server).post('/login').send({
       email: 'test@example.com',
       password: 'password123',
     });
@@ -50,13 +59,13 @@ describe('User API tests', () => {
   });
 
   test('GET /:id - should get user data', async () => {
-    const res = await request(app).get(`/${userId}`);
+    const res = await request(server).get(`/${userId}`);
     expect(res.statusCode).toBe(200);
     expect(res.body.email).toBe('test@example.com');
   });
 
   test('POST /update - should update user data', async () => {
-    const res = await request(app).post('/update').send({
+    const res = await request(server).post('/update').send({
       userId,
       name: 'Updated User',
       email: 'updated@example.com',
@@ -67,7 +76,7 @@ describe('User API tests', () => {
   });
 
   test('POST /change-password - should change user password', async () => {
-    const res = await request(app).post('/change-password').send({
+    const res = await request(server).post('/change-password').send({
       userId,
       oldPassword: 'password123',
       newPassword: 'newPassword456',
@@ -78,7 +87,7 @@ describe('User API tests', () => {
   });
 
   test('POST /login - login with new password', async () => {
-    const res = await request(app).post('/login').send({
+    const res = await request(server).post('/login').send({
       email: 'updated@example.com',
       password: 'newPassword456',
     });
