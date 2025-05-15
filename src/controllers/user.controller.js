@@ -18,10 +18,15 @@ class UserController {
   async getUserById(req, res) {
     const userId = req.params.id;
     if (!userId) return res.status(400).send('No user ID provided');
+    
+    // Validate that userId is a number to prevent SQL errors
+    if (isNaN(parseInt(userId))) {
+      return res.status(400).json({ error: 'Invalid user ID format. ID must be a number.' });
+    }
 
     try {
       const user = await this.dbCircuitBreaker.fire(async () => {
-        return await getUser().findByPk(userId);
+        return await getUser().findByPk(parseInt(userId));
       });
       
       if (!user) return res.status(404).send('User not found');
@@ -29,6 +34,14 @@ class UserController {
       res.json({ name: user.name, email: user.email });
     } catch (err) {
       console.error('Error fetching user:', err);
+      
+      // Improved error handling with specific messages for different error types
+      if (err.name === 'SequelizeDatabaseError') {
+        return res.status(400).json({ error: 'Database query error', details: err.message });
+      } else if (err.name === 'CircuitBreakerError') {
+        return res.status(503).json({ error: 'Service temporarily unavailable', details: 'Database connection issues' });
+      }
+      
       res.status(500).send('Internal server error');
     }
   }
