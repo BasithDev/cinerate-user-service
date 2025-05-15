@@ -19,9 +19,10 @@ const circuitBreakerState = new promClient.Gauge({
 // Circuit breaker options for database operations
 const dbCircuitOptions = {
   failureThreshold: 50,
-  resetTimeout: 10000,
-  timeout: 3000,
-  errorThresholdPercentage: 50
+  resetTimeout: 30000,    // Increased from 10000 to 30000 ms
+  timeout: 10000,         // Increased from 3000 to 10000 ms
+  errorThresholdPercentage: 50,
+  rollingCountTimeout: 60000  // Added to track failures over a longer period
 };
 
 /**
@@ -50,9 +51,9 @@ function createDatabaseCircuitBreaker() {
           }
         }
       }, {
-        retries: 3,
+        retries: 5,                 // Increased from 3 to 5 retries
         minTimeout: 1000,
-        maxTimeout: 5000,
+        maxTimeout: 8000,           // Increased from 5000 to 8000 ms
         factor: 2,
         randomize: true,
         onRetry: (err) => {

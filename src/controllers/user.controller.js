@@ -111,6 +111,18 @@ class UserController {
       if (error.name === 'SequelizeUniqueConstraintError') {
         return res.status(400).json({ message: 'Email already in use' });
       }
+      
+      // Enhanced error handling with more detailed responses
+      if (error.code === 'ETIMEDOUT') {
+        console.error('Database timeout error:', error);
+        return res.status(503).json({ message: 'Service temporarily unavailable. Please try again later.' });
+      }
+      
+      if (error.code === 'EOPENBREAKER') {
+        console.error('Circuit breaker open:', error);
+        return res.status(503).json({ message: 'Service temporarily unavailable due to database issues. Please try again later.' });
+      }
+      
       console.error('Error creating user:', error);
       res.status(500).send('Internal server error');
     }

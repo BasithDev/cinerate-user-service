@@ -54,14 +54,18 @@ async function connectToDatabase(uri) {
       dialect: 'postgres',
       logging: false,
       pool: {
-        max: 5,
-        min: 0,
-        acquire: 30000,
-        idle: 10000
+        max: 10,            // Increased from 5 to 10 for more connections
+        min: 2,             // Increased from 0 to 2 to maintain minimum connections
+        acquire: 60000,     // Increased from 30000 to 60000 ms
+        idle: 20000,        // Increased from 10000 to 20000 ms
+        evict: 30000        // Added eviction time for stale connections
       },
       retry: {
-        max: 3,
-        timeout: 30000
+        max: 5,             // Increased from 3 to 5 retries
+        timeout: 60000      // Increased from 30000 to 60000 ms
+      },
+      dialectOptions: {
+        connectTimeout: 60000 // Added explicit connection timeout
       }
     });
     
